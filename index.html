@@ -35,18 +35,20 @@
             justify-content: center;
             align-items: center;
             
-            /* --- FIX: 背景图替换 --- */
             /* 使用上传的图片作为背景 */
-            background: url('./stonepig.jpg') no-repeat center center;
+            background: url('./stonepig.png') no-repeat center center;
             /* 确保背景覆盖全屏 */
             background-size: cover;
             /* 保持像素风格清晰度，不模糊 */
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            
+            /* 增加背景本身的过渡效果（如果后续想调整滤镜） */
+            transition: filter 2s ease;
         }
 
-        /* 增加一个半透明遮罩，防止背景太花影响文字阅读（可选，目前设为透明） */
+        /* 半透明遮罩，用于在阅读信件时压暗背景 */
         #game-container::after {
             content: '';
             position: absolute;
@@ -54,9 +56,16 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.2); /* 20% 黑色遮罩 */
+            background: rgba(0, 0, 0, 0.4); /* 初始稍微深一点(40%)，让文字更清楚 */
             pointer-events: none;
             z-index: 0;
+            /* FIX 1: 添加背景颜色的过渡动画 */
+            transition: background-color 2s ease;
+        }
+
+        /* FIX 2: 亮起背景的类：将遮罩变为全透明 */
+        #game-container.brighten::after {
+            background-color: rgba(0, 0, 0, 0); /* 变成透明，还原图片原色 */
         }
 
         canvas {
@@ -277,6 +286,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            /* 默认动画 duration 0.5s */
             animation: itemPop 0.5s ease-out forwards;
         }
 
@@ -502,7 +512,7 @@
 
         // Animation Loop
         function animate() {
-            // --- FIX: 背景改为透明，不再绘制蓝天草地，只保留花瓣飘落 ---
+            // 只保留飘落特效，不绘制覆盖背景的色块
             ctx.clearRect(0, 0, width, height);
 
             particles.forEach(p => {
@@ -531,6 +541,7 @@
         const typeWriterEl = document.getElementById('typewriter-text');
         const acceptBtn = document.getElementById('acceptBtn');
         const itemPopup = document.getElementById('itemPopup');
+        const gameContainer = document.getElementById('game-container');
 
         function openLetter() {
             mailbox.style.display = 'none';
@@ -539,7 +550,7 @@
             typeWriter(chars, 0);
         }
 
-        // FIX 1: 使用 Array.from 分割字符串，确保 Emoji 不会被拆分成两个字符
+        // 使用 Array.from 分割字符串，确保 Emoji 不会被拆分成两个字符
         const chars = Array.from(letterText);
 
         function typeWriter(chars, i) {
@@ -561,15 +572,30 @@
         }
 
         function acceptGift() {
+            // 1. 放烟花
             for(let i=0; i<100; i++) {
                 confettis.push(new Confetti());
             }
+            // 2. 隐藏信封
             letterBox.style.display = 'none';
+            // 3. 显示礼物弹窗
             itemPopup.style.display = 'block';
+            
+            // 4. 新增逻辑：4秒后开始淡出，并同时点亮背景
+            setTimeout(() => {
+                itemPopup.style.transition = "opacity 2s";
+                itemPopup.style.opacity = "0";
+                
+                // FIX 3: 同时移除背景遮罩，让背景图变亮变清晰
+                gameContainer.classList.add('brighten');
+                
+                // 淡出完成后彻底隐藏，避免阻挡点击背景
+                setTimeout(() => {
+                    itemPopup.style.display = 'none';
+                }, 2000);
+            }, 4000); // 4000ms = 4秒阅读时间
         }
 
     </script>
 </body>
-
 </html>
-
